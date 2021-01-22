@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: Poles Collector
+ * Plugin Name: Polls Collector
  * Plugin URI: https://example.com
- * Description: A plugin to collect poles.
+ * Description: A plugin to collect polls.
  * Author: Alex Stine
  * Author URI: https://example.com
  * Version: 1.0
@@ -10,7 +10,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-class Custom_Pole_Collector {
+class Custom_Poll_Collector {
 
 	/**
 	 * Holds our plugin instance.
@@ -60,7 +60,7 @@ class Custom_Pole_Collector {
 	/**
 	 * Singleton.
 	 *
-	 * @return Custom_Pole_Collector.
+	 * @return Custom_Poll_Collector.
 	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {
@@ -79,33 +79,33 @@ class Custom_Pole_Collector {
 		/**
 		 * Filters the shortcode name that is used to output the feedback form.
 		 *
-		 * @param string $shortcode The shortcode name, default is 'custom_pole_collector_form'.
+		 * @param string $shortcode The shortcode name, default is 'custom_poll_collector_form'.
 		 */
-		$this->shortcode_name = apply_filters( 'custom_pole_collector_override_shortcode_name', 'custom_pole_collector_form' );
+		$this->shortcode_name = apply_filters( 'custom_poll_collector_override_shortcode_name', 'custom_poll_collector_form' );
 
 		add_shortcode( $this->shortcode_name, array( $this, 'render_feedback_form' ) );
 
-		$this->namespace = 'custom-pole-collector';
+		$this->namespace = 'custom-poll-collector';
 		$this->version = 1;
 
-$this->td = 'custom-pole-collector';
+$this->td = 'custom-poll-collector';
 
-		$this->option_name = 'custom_pole_collector';
+		$this->option_name = 'custom_poll_collector';
 
 		/**
 		 * Filter to override capability that is required to access the admin page.
 		 *
 		 * @param string $capability The capability, default is 'manage_options'.
 		 */
-		$this->admin_cap = apply_filters( 'custom_pole_collector_override_admin_cap', 'manage_options' );
+		$this->admin_cap = apply_filters( 'custom_poll_collector_override_admin_cap', 'manage_options' );
 		/**
 		 * Filter to override capability that is required to delete feedback.
 		 *
 		 * @param string $capability The capability, default is 'manage_options'.
 		 */
-		$this->feedback_delete_cap = apply_filters( 'custom_pole_collector_override_feedback_delete_cap', 'manage_options' );
+		$this->feedback_delete_cap = apply_filters( 'custom_poll_collector_override_feedback_delete_cap', 'manage_options' );
 
-		$this->admin_url = admin_url( 'options-general.php?page=custom-pole-collector' );
+		$this->admin_url = admin_url( 'options-general.php?page=custom-poll-collector' );
 	}
 
 	/**
@@ -217,7 +217,7 @@ $this->td = 'custom-pole-collector';
 		if ( ! current_user_can( $this->admin_cap ) ) {
 			return;
 		}
-		add_submenu_page( 'options-general.php', 'Custom Pole Collector', 'Pole Feedback', $this->admin_cap, 'custom-pole-collector', array( $this, 'admin_page_output' ) );
+		add_submenu_page( 'options-general.php', 'Custom poll Collector', 'poll Feedback', $this->admin_cap, 'custom-poll-collector', array( $this, 'admin_page_output' ) );
 	}
 
 	/**
@@ -230,7 +230,7 @@ $this->td = 'custom-pole-collector';
 		$option = get_option( $this->option_name );
 		?>
 		<div id="wrap">
-			<h1>Custom Pole Collector Feedback</h1>
+			<h1>Custom poll Collector Feedback</h1>
 			<?php
 			if ( ! empty( $_GET['action'] ) && 'delete' == $_GET['action'] ) {
 				$option_index = sanitize_text_field( wp_unslash( $_GET['option_index'] ) );
@@ -277,4 +277,4 @@ $this->td = 'custom-pole-collector';
 
 }
 
-$custom_pole_collector = Custom_Pole_Collector::get_instance();
+$custom_poll_collector = Custom_poll_Collector::get_instance();
