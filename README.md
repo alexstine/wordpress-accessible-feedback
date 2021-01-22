@@ -1,4 +1,4 @@
-# wordpress-feedback-form
+# wordpress-custom-poll-collector
 
 A simple lightweight WordPress plugin to collect feedback on your site.
 
