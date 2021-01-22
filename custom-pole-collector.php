@@ -122,6 +122,11 @@ $this->td = 'custom-pole-collector';
 					'sanitize_callback' => function( $value ) {
 						return sanitize_text_field( wp_unslash( $value ) );
 					},
+					'validate_callback' => function( $value ) {
+						if ( empty( $value ) ) {
+							return new WP_Error( 'missing_feedback_entry', __( 'Missing form data: feedback_entry.', $this->td ), array( 'status' => 500 ) );
+						}
+					},
 				),
 			),
 		) );
@@ -136,6 +141,12 @@ $this->td = 'custom-pole-collector';
 					'sanitize_callback' => function( $value ) {
 						return sanitize_text_field( wp_unslash( $value ) );
 					},
+					'validate_callback' => function() {
+						$option = get_option( $this->option_name );
+						if ( empty( $option ) ) {
+							return __( 'There is no feedback to display.', $this->td );
+						}
+					},
 				),
 			),
 		) );
@@ -149,11 +160,9 @@ $this->td = 'custom-pole-collector';
 	 * @return object WP_REST_Response.
 	 */
 	public function process_data_callback( WP_REST_Request $request ) {
-		if ( empty( $request['feedback_item'] ) ) {
-			return new WP_Error( 'missing_feedback_entry', __( 'Missing form data: feedback_entry.', $this->td ), array( 'status' => 500 ) );
-		}
 		$option = get_option( $this->option_name );
 		if ( false === $option ) {
+			$option = array();
 			$option[] = $request['feedback_item'];
 			$add = add_option( $this->option_name, $option );
 		} else {
@@ -175,9 +184,6 @@ $this->td = 'custom-pole-collector';
 	 */
 	public function view_data_callback( WP_REST_Request $request ) {
 		$option = get_option( $this->option_name );
-		if ( empty( $option ) ) {
-			return __( 'There is no feedback to display.', $this->td );
-		}
 		if ( '' == $request['feedback_item_index'] ) { // Let's return all.
 			return $option;
 		} else { // Let's return one.
