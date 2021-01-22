@@ -125,6 +125,20 @@ $this->td = 'custom-pole-collector';
 				),
 			),
 		) );
+
+		register_rest_route( $this->namespace . '/v' . $this->version, '/view-data', array(
+			'methods' => 'GET',
+			'callback' => array( $this, 'view_data_callback' ),
+			'permission_callback' => '__return_true',
+			'args' => array(
+				'feedback_item_index' => array(
+					'default' => '',
+					'sanitize_callback' => function( $value ) {
+						return sanitize_text_field( wp_unslash( $value ) );
+					},
+				),
+			),
+		) );
 	}
 
 	/**
@@ -150,6 +164,31 @@ $this->td = 'custom-pole-collector';
 			return new WP_Error( 'save_error', __( 'Something went wrong saving your entry. Please try again later.', $this->td ), array( 'status' => 500 ) );
 		}
 		return 'Feedback collected, thank you!';
+	}
+
+	/**
+	 * Callback function for view_data.
+	 *
+	 * @param object $request WP_REST_Request object.
+	 *
+	 * @return object WP_REST_Response.
+	 */
+	public function view_data_callback( WP_REST_Request $request ) {
+		$option = get_option( $this->option_name );
+		if ( empty( $option ) ) {
+			return __( 'There is no feedback to display.', $this->td );
+		}
+		if ( '' == $request['feedback_item_index'] ) { // Let's return all.
+			return $option;
+		} else { // Let's return one.
+			if ( ! is_numeric( $request['feedback_item_index'] ) ) {
+				return new WP_Error( 'non_int', __( 'Please pass a numerical integer.', $this->td ), array( 'status' => 500 ) );
+			}
+			if ( ! array_key_exists( $request['feedback_item_index'], $option ) ) {
+				return new WP_Error( 'missing_data', __( 'It is not possible to GET an option that does not exist.', $this->td ), array( 'status' => 500 ) );
+			}
+			return $option[$request['feedback_item_index']];
+		}
 	}
 
 	/**
