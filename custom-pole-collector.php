@@ -228,9 +228,9 @@ $this->td = 'custom-pole-collector';
 			<?php
 			if ( ! empty( $_GET['action'] ) && 'delete' == $_GET['action'] ) {
 				$option_index = sanitize_text_field( wp_unslash( $_GET['option_index'] ) );
-				if ( array_key_exists( $option_index, $option ) ) {
+				if ( is_numeric( $option_index ) && array_key_exists( $option_index, $option ) ) {
 					unset( $option[$option_index] );
-					$option = array_values( $option );
+					$option = array_values( $option ); // Required to make sure array starts at key 0.
 					if ( update_option( $this->option_name, $option ) ) {
 						echo '<div class="notice notice-success is-dismissible"><p>' . esc_html( __( 'Successfully removed feedback entry.', $this->td ) ) . '</p></div>';
 					} else {
