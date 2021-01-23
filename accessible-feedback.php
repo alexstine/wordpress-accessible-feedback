@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: Polls Collector
+ * Plugin Name: Accessible Feedback
  * Plugin URI: https://example.com
- * Description: A plugin to collect polls.
+ * Description: A plugin to collect feedback. Compatible with screen readers.
  * Author: Alex Stine
  * Author URI: https://example.com
  * Version: 1.0
@@ -10,7 +10,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-class Custom_Poll_Collector {
+class Accessible_Feedback_Plugin {
 
 	/**
 	 * Holds our plugin instance.
@@ -60,7 +60,7 @@ class Custom_Poll_Collector {
 	/**
 	 * Singleton.
 	 *
-	 * @return Custom_Poll_Collector.
+	 * @return Accessible_Feedback_Plugin.
 	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {
@@ -79,33 +79,33 @@ class Custom_Poll_Collector {
 		/**
 		 * Filters the shortcode name that is used to output the feedback form.
 		 *
-		 * @param string $shortcode The shortcode name, default is 'custom_poll_collector_form'.
+		 * @param string $shortcode The shortcode name, default is 'accessible_feedback'.
 		 */
-		$this->shortcode_name = apply_filters( 'custom_poll_collector_override_shortcode_name', 'custom_poll_collector_form' );
+		$this->shortcode_name = apply_filters( 'accessible_feedback_override_shortcode_name', 'accessible_feedback' );
 
 		add_shortcode( $this->shortcode_name, array( $this, 'render_feedback_form' ) );
 
-		$this->namespace = 'custom-poll-collector';
+		$this->namespace = 'accessible-feedback';
 		$this->version = 1;
 
-$this->td = 'custom-poll-collector';
+$this->td = 'accessible-feedback';
 
-		$this->option_name = 'custom_poll_collector';
+		$this->option_name = 'accessible_feedback';
 
 		/**
 		 * Filter to override capability that is required to access the admin page.
 		 *
 		 * @param string $capability The capability, default is 'manage_options'.
 		 */
-		$this->admin_cap = apply_filters( 'custom_poll_collector_override_admin_cap', 'manage_options' );
+		$this->admin_cap = apply_filters( 'accessible_feedback_override_admin_cap', 'manage_options' );
 		/**
 		 * Filter to override capability that is required to delete feedback.
 		 *
 		 * @param string $capability The capability, default is 'manage_options'.
 		 */
-		$this->feedback_delete_cap = apply_filters( 'custom_poll_collector_override_feedback_delete_cap', 'manage_options' );
+		$this->feedback_delete_cap = apply_filters( 'accessible_feedback_override_feedback_delete_cap', 'manage_options' );
 
-		$this->admin_url = admin_url( 'options-general.php?page=custom-poll-collector' );
+		$this->admin_url = admin_url( 'options-general.php?page=accessible-feedback' );
 	}
 
 	/**
@@ -161,7 +161,7 @@ $this->td = 'custom-poll-collector';
 	 */
 	public function process_data_callback( WP_REST_Request $request ) {
 		$option = get_option( $this->option_name );
-		if ( false === $option ) {
+		if ( empty( $option ) ) {
 			$option = array();
 			$option[] = $request['feedback_item'];
 			$add = add_option( $this->option_name, $option );
@@ -172,7 +172,7 @@ $this->td = 'custom-poll-collector';
 		if ( true !== $add ) {
 			return new WP_Error( 'save_error', __( 'Something went wrong saving your entry. Please try again later.', $this->td ), array( 'status' => 500 ) );
 		}
-		return 'Feedback collected, thank you!';
+		return __( 'Feedback collected, thank you!', $this->td );
 	}
 
 	/**
@@ -203,9 +203,9 @@ $this->td = 'custom-poll-collector';
 	public function render_feedback_form() {
 		$submit_url = get_rest_url( null, $this->namespace . '/v' . $this->version . '/process-data' );
 		$output = '<form action="' . esc_url( $submit_url ) . '" method="POST" />';
-			$output .= '<label for="feedback_item">What would you like to see change about our site?</label>';
+			$output .= '<label for="feedback_item">' . esc_html( __( 'What would you like to see change about our site?', $this->td ) ) . '</label>';
 			$output .= '<input type="text" id="feedback_item" name="feedback_item" required/>';
-			$output .= '<input type="submit" value="Send Feedback Now!" />';
+			$output .= '<input type="submit" value="' . esc_attr( __( 'Send Feedback Now!', $this->td ) ) . '" />';
 		$output .= '</form>';
 		return $output;
 		}
@@ -217,7 +217,7 @@ $this->td = 'custom-poll-collector';
 		if ( ! current_user_can( $this->admin_cap ) ) {
 			return;
 		}
-		add_submenu_page( 'options-general.php', 'Custom poll Collector', 'poll Feedback', $this->admin_cap, 'custom-poll-collector', array( $this, 'admin_page_output' ) );
+		add_submenu_page( 'options-general.php', __( 'Accessible Feedback', $this->td ), __( 'Accessible Feedback', $this->td ), $this->admin_cap, 'accessible-feedback', array( $this, 'admin_page_output' ) );
 	}
 
 	/**
@@ -230,23 +230,27 @@ $this->td = 'custom-poll-collector';
 		$option = get_option( $this->option_name );
 		?>
 		<div id="wrap">
-			<h1>Custom poll Collector Feedback</h1>
+			<h1><?php echo esc_html( __( 'Accessible Feedback', $this->td ) ); ?></h1>
 			<?php
 			if ( ! empty( $_GET['action'] ) && 'delete' == $_GET['action'] ) {
-				$option_index = sanitize_text_field( wp_unslash( $_GET['option_index'] ) );
-				if ( is_numeric( $option_index ) && array_key_exists( $option_index, $option ) ) {
-					unset( $option[$option_index] );
-					$option = array_values( $option ); // Required to make sure array starts at key 0.
-					if ( update_option( $this->option_name, $option ) ) {
-						echo '<div class="notice notice-success is-dismissible"><p>' . esc_html( __( 'Successfully removed feedback entry.', $this->td ) ) . '</p></div>';
+				if ( current_user_can( $this->feedback_delete_cap ) ) {
+					$option_index = sanitize_text_field( wp_unslash( $_GET['option_index'] ) );
+					if ( is_numeric( $option_index ) && array_key_exists( $option_index, $option ) ) {
+						unset( $option[$option_index] );
+						$option = array_values( $option ); // Required to make sure array starts at key 0.
+						if ( update_option( $this->option_name, $option ) ) {
+							echo '<div class="notice notice-success is-dismissible"><p>' . esc_html( __( 'Successfully removed feedback entry.', $this->td ) ) . '</p></div>';
+						} else {
+							echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( __( 'There was an error removing the feedback entry.', $this->td ) ) . '</p></div>';
+						}
 					} else {
-						echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( __( 'There was an error removing the feedback entry.', $this->td ) ) . '</p></div>';
+						echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( __( 'You cannot delete a feedback entry that doesn\'t exist.', $this->td ) ) . '</p></div>';
 					}
 				} else {
-					echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( __( 'You cannot delete a feedback entry that doesn\'t exist.', $this->td ) ) . '</p></div>';
+					echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( __( 'You do not have permission to delete this feedback item.', $this->td ) ) . '</p></div>';
 				}
 			}
-			if ( false === $option ) {
+			if ( empty( $option) ) {
 				echo '<p>' . esc_html( __( 'No Feedback to display.', $this->td ) ) . '</p>';
 			} else {
 				?>
@@ -262,7 +266,7 @@ $this->td = 'custom-poll-collector';
 							$delete_url = $this->admin_url . '&action=delete&option_index=' . $index;
 							echo '<tr>';
 								echo '<td>' . esc_html( $option[$index] ) . '</td>';
-								echo '<td><a href="' . esc_url( $delete_url ) . '">Delete</a>';
+								echo '<td><a href="' . esc_url( $delete_url ) . '">' . esc_html( __( 'Delete', $this->td ) ) . '</a>';
 							echo '</tr>';
 						}
 						?>
@@ -277,4 +281,4 @@ $this->td = 'custom-poll-collector';
 
 }
 
-$custom_poll_collector = Custom_poll_Collector::get_instance();
+$accessible_feedback = Accessible_Feedback_Plugin::get_instance();
