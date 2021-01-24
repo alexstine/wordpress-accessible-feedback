@@ -58,6 +58,21 @@ class Accessible_Feedback_Plugin {
 	private $shortcode_name;
 
 	/**
+	 * Holds the plugin dir url.
+	 */
+	private $plugin_url;
+
+	/**
+	 * Holds the assets version.
+	 */
+	private $cache_ver;
+
+	/**
+	 * Minify the assets?
+	 */
+	private $minify;
+
+	/**
 	 * Singleton.
 	 *
 	 * @return Accessible_Feedback_Plugin.
@@ -75,6 +90,7 @@ class Accessible_Feedback_Plugin {
 	private function __construct() {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 		add_action( 'admin_menu', array( $this, 'admin_page' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
 		/**
 		 * Filters the shortcode name that is used to output the feedback form.
@@ -106,6 +122,17 @@ $this->td = 'accessible-feedback';
 		$this->feedback_delete_cap = apply_filters( 'accessible_feedback_override_feedback_delete_cap', 'manage_options' );
 
 		$this->admin_url = admin_url( 'options-general.php?page=accessible-feedback' );
+
+		$this->plugin_url = plugin_dir_url( __FILE__ );
+
+		$this->cache_ver = '1.0';
+
+		/**
+		 * Whether to minify scripts or not.
+		 *
+		 * @param bool $minify True to minify, false to not.
+		 */
+		$this->minify = apply_filters( 'accessible_content_override_minify_scripts', true );
 	}
 
 	/**
@@ -161,10 +188,8 @@ $this->td = 'accessible-feedback';
 	 */
 	public function process_data_callback( WP_REST_Request $request ) {
 		$option = get_option( $this->option_name );
-		if ( empty( $option ) ) {
+		if ( false === $option ) {
 			$option = array();
-			$option[] = $request['feedback_item'];
-			$add = add_option( $this->option_name, $option );
 		} else {
 			$option[] = $request['feedback_item'];
 			$add = update_option( $this->option_name, $option );
@@ -198,14 +223,27 @@ $this->td = 'accessible-feedback';
 	}
 
 	/**
+	 * Enqueue scripts.
+	 */
+	public function enqueue_scripts() {
+		if ( true == $this->minify ) {
+			wp_register_script( 'accessible_feedback', $this->plugin_url . 'public/js/form-submit.min.js', array( 'jquery' ), $this->cache_ver );
+		} else {
+			wp_register_script( 'accessible_feedback', $this->plugin_url . 'public/js/form-submit.js', array( 'jquery' ), $this->cache_ver );
+		}
+	}
+
+	/**
 	 * Output feedback form, shortcode callback.
 	 */
 	public function render_feedback_form() {
+		wp_enqueue_script( 'accessible_feedback' );
 		$submit_url = get_rest_url( null, $this->namespace . '/v' . $this->version . '/process-data' );
-		$output = '<form action="' . esc_url( $submit_url ) . '" method="POST" />';
+		$output = '<div class="accessible-feedback-form-response"></div>';
+		$output .= '<form class="accessible-feedback-form" action="' . esc_url( $submit_url ) . '" method="POST" />';
 			$output .= '<label for="feedback_item">' . esc_html( __( 'What would you like to see change about our site?', $this->td ) ) . '</label>';
 			$output .= '<input type="text" id="feedback_item" name="feedback_item" required/>';
-			$output .= '<input type="submit" value="' . esc_attr( __( 'Send Feedback Now!', $this->td ) ) . '" />';
+			$output .= '<input type="submit" id="feedback_submit" value="' . esc_attr( __( 'Send Feedback Now!', $this->td ) ) . '" />';
 		$output .= '</form>';
 		return $output;
 		}
